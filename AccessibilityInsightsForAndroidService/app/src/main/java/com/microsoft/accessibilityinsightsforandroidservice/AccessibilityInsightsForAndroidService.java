@@ -42,7 +42,7 @@ public class AccessibilityInsightsForAndroidService extends AccessibilityService
   public AccessibilityInsightsForAndroidService() {
     deviceConfigFactory = new DeviceConfigFactory();
     axeScanner =
-        AxeScannerFactory.createAxeScanner(deviceConfigFactory, this::getRealDisplayMetrics);
+        AxeScannerFactory.createAxeScanner(deviceConfigFactory, this::getRealDisplayMetrics, this);
     eventHelper = new EventHelper(new ThreadSafeSwapper<>());
     focusVisualizationStateManager = new FocusVisualizationStateManager();
   }
