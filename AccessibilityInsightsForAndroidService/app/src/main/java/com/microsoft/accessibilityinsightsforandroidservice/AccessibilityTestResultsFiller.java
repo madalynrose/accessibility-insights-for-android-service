@@ -4,6 +4,7 @@ import android.util.Log;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheckResult;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.FieldNamingPolicy;
@@ -72,11 +73,16 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
             throw new ScanException("Scanner returned no data");
         }
 
-        GsonBuilder gsonBuilder = new GsonBuilder().setFieldNamingStrategy(new FieldNamingStrategy() {
-            int x = 0;
+        GsonBuilder gsonBuilder = new GsonBuilder().setFieldNamingStrategy(f -> f.getDeclaringClass().getCanonicalName() + "." + f.getName()).setExclusionStrategies(new ExclusionStrategy() {
+            ImmutableList<String> allowed = ImmutableList.of("ArrayList", "AccessibilityHierarchyCheckResult", "ImmutableList", "resultId", "int", "ResultMetadata", "Answer", "Question");
             @Override
-            public String translateName(Field f) {
-                return x++ + f.getName();
+            public boolean shouldSkipField(FieldAttributes f) {
+                return false;
+            }
+
+            @Override
+            public boolean shouldSkipClass(Class<?> clazz) {
+                return !allowed.contains(clazz.getSimpleName());
             }
         });
 
