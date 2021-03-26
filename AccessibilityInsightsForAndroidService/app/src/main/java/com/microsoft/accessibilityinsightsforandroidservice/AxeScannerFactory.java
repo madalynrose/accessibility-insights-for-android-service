@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 public class AxeScannerFactory {
   public static AxeScanner createAxeScanner(
-      DeviceConfigFactory deviceConfigFactory, Supplier<DisplayMetrics> displayMetricsSupplier, Context context) {
+      DeviceConfigFactory deviceConfigFactory, Supplier<DisplayMetrics> displayMetricsSupplier) {
     final AxeViewsFactory axeViewsFactory =
         new AxeViewsFactory(
             new NodeViewBuilderFactory(),
@@ -22,6 +22,6 @@ public class AxeScannerFactory {
         new AxeContextFactory(axeImageFactory, axeViewsFactory, axeDeviceFactory);
     final AxeRunnerFactory axeRunnerFactory = new AxeRunnerFactory();
 
-    return new AxeScanner(axeRunnerFactory, axeContextFactory, context);
+    return new AxeScanner(axeRunnerFactory, axeContextFactory);
   }
 }

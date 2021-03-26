@@ -22,12 +22,10 @@ import java.util.List;
 public class AxeScanner {
   private final AxeRunnerFactory axeRunnerFactory;
   private final AxeContextFactory axeContextFactory;
-  private final Context context;
 
-  public AxeScanner(AxeRunnerFactory axeRunnerFactory, AxeContextFactory axeContextFactory, Context context) {
+  public AxeScanner(AxeRunnerFactory axeRunnerFactory, AxeContextFactory axeContextFactory) {
     this.axeRunnerFactory = axeRunnerFactory;
     this.axeContextFactory = axeContextFactory;
-    this.context = context;
   }
 
   public AxeResult scanWithAxe(AccessibilityNodeInfo rootNode, Bitmap screenshot)
@@ -35,27 +33,6 @@ public class AxeScanner {
     final Axe axe = axeRunnerFactory.createAxeRunner();
     final AxeContext axeContext = axeContextFactory.createAxeContext(rootNode, screenshot);
 
-    // temporary place to view Accessibility Test Framework for Android errors
-    List<AccessibilityHierarchyCheckResult> otherErrors = this.RunAccessibilityChecks(rootNode);
-
     return axe.run(axeContext);
-  }
-
-  private List<AccessibilityHierarchyCheckResult> RunAccessibilityChecks(AccessibilityNodeInfo rootNode) {
-    ImmutableSet<AccessibilityHierarchyCheck> checks =
-            AccessibilityCheckPreset.getAccessibilityHierarchyChecksForPreset(
-                    AccessibilityCheckPreset.LATEST);
-    AccessibilityHierarchyAndroid hierarchy = AccessibilityHierarchyAndroid.newBuilder(rootNode,this.context).build();
-    List<AccessibilityHierarchyCheckResult> results = new ArrayList<>();
-
-    for (AccessibilityHierarchyCheck check : checks) {
-      results.addAll(check.runCheckOnHierarchy(hierarchy));
-    }
-
-    List<AccessibilityHierarchyCheckResult> errors =
-            AccessibilityCheckResultUtils.getResultsForType(
-                    results, AccessibilityCheckResult.AccessibilityCheckResultType.ERROR);
-
-    return errors;
   }
 }

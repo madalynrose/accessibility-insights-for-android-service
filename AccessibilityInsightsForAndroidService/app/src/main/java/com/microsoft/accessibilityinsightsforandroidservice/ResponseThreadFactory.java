@@ -14,6 +14,7 @@ public class ResponseThreadFactory {
       ScreenshotController screenshotController,
       EventHelper eventHelper,
       AxeScanner axeScanner,
+      AccessibilityTestScanner accessibilityTestScanner,
       DeviceConfigFactory deviceConfigFactory,
       FocusVisualizationStateManager focusVisualizationStateManager) {
     responseWriterFactory = new ResponseWriterFactory();
@@ -24,6 +25,7 @@ public class ResponseThreadFactory {
             new RootNodeFinder(),
             eventHelper,
             axeScanner,
+            accessibilityTestScanner,
             deviceConfigFactory,
             new RequestHandlerImplFactory(),
             focusVisualizationStateManager);

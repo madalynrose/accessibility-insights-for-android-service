@@ -9,6 +9,7 @@ public class RequestHandlerFactory {
 
   private final ScreenshotController screenshotController;
   private final AxeScanner axeScanner;
+  private final AccessibilityTestScanner accessibilityTestScanner;
   private final RootNodeFinder rootNodeFinder;
   private final EventHelper eventHelper;
   private final DeviceConfigFactory deviceConfigFactory;
@@ -20,11 +21,13 @@ public class RequestHandlerFactory {
       RootNodeFinder rootNodeFinder,
       EventHelper eventHelper,
       AxeScanner axeScanner,
+      AccessibilityTestScanner accessibilityTestScanner,
       DeviceConfigFactory deviceConfigFactory,
       RequestHandlerImplFactory requestHandlerImplFactory,
       FocusVisualizationStateManager focusVisualizationStateManager) {
     this.screenshotController = screenshotController;
     this.axeScanner = axeScanner;
+    this.accessibilityTestScanner = accessibilityTestScanner;
     this.rootNodeFinder = rootNodeFinder;
     this.eventHelper = eventHelper;
     this.deviceConfigFactory = deviceConfigFactory;
@@ -45,6 +48,16 @@ public class RequestHandlerFactory {
             resultRequestFulfiller,
             "processResultRequest",
             "*** About to process scan request");
+      }
+      if (requestString.startsWith("GET /AccessibilityInsights/accessibilityTestFramework/result ")) {
+        AccessibilityTestResultsFiller accessibilityTestResultsFiller =
+                new AccessibilityTestResultsFiller(
+                        responseWriter, rootNodeFinder, eventHelper, accessibilityTestScanner);
+        return requestHandlerImplFactory.createRequestHandler(
+                socketHolder,
+                accessibilityTestResultsFiller,
+                "accessibilityTestResultRequest",
+                "*** About to process accessibilityTestFramework scan request");
       }
       if (requestString.startsWith("GET /AccessibilityInsights/config ")) {
         ConfigRequestFulfiller configRequestFulfiller =

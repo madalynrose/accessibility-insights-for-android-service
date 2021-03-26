@@ -29,6 +29,7 @@ public class AccessibilityInsightsForAndroidService extends AccessibilityService
   private static final String TAG = "AccessibilityInsightsForAndroidService";
   private static ServerThread ServerThread = null;
   private final AxeScanner axeScanner;
+  private final AccessibilityTestScanner accessibilityTestScanner;
   private final EventHelper eventHelper;
   private final DeviceConfigFactory deviceConfigFactory;
   private final OnScreenshotAvailableProvider onScreenshotAvailableProvider =
@@ -42,7 +43,8 @@ public class AccessibilityInsightsForAndroidService extends AccessibilityService
   public AccessibilityInsightsForAndroidService() {
     deviceConfigFactory = new DeviceConfigFactory();
     axeScanner =
-        AxeScannerFactory.createAxeScanner(deviceConfigFactory, this::getRealDisplayMetrics, this);
+        AxeScannerFactory.createAxeScanner(deviceConfigFactory, this::getRealDisplayMetrics);
+    accessibilityTestScanner = AccessibilityTestScannerFactory.createAccessibilityTestScanner(this);
     eventHelper = new EventHelper(new ThreadSafeSwapper<>());
     focusVisualizationStateManager = new FocusVisualizationStateManager();
   }
@@ -107,7 +109,7 @@ public class AccessibilityInsightsForAndroidService extends AccessibilityService
 
     ResponseThreadFactory responseThreadFactory =
         new ResponseThreadFactory(
-            screenshotController, eventHelper, axeScanner, deviceConfigFactory, focusVisualizationStateManager);
+            screenshotController, eventHelper, axeScanner, accessibilityTestScanner, deviceConfigFactory, focusVisualizationStateManager);
     ServerThread = new ServerThread(new ServerSocketFactory(), responseThreadFactory);
     ServerThread.start();
   }
