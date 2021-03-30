@@ -5,14 +5,20 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckPreset;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckResult;
+import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckResultBaseUtils;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckResultUtils;
+import com.google.android.apps.common.testing.accessibility.framework.AccessibilityEventCheck;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheck;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheckResult;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.AccessibilityHierarchyAndroid;
 import com.google.common.collect.ImmutableSet;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class AccessibilityTestScanner {
     private final Context context;
@@ -32,10 +38,8 @@ public class AccessibilityTestScanner {
             results.addAll(check.runCheckOnHierarchy(hierarchy));
         }
 
-        List<AccessibilityHierarchyCheckResult> errors =
-                AccessibilityCheckResultUtils.getResultsForType(
-                        results, AccessibilityCheckResult.AccessibilityCheckResultType.ERROR);
+        AccessibilityCheckResult.AccessibilityCheckResultType[] relevantTypes = {AccessibilityCheckResult.AccessibilityCheckResultType.ERROR,AccessibilityCheckResult.AccessibilityCheckResultType.INFO, AccessibilityCheckResult.AccessibilityCheckResultType.WARNING};
 
-        return errors;
+        return AccessibilityCheckResultUtils.getResultsForTypes(results, new HashSet<>(Arrays.asList(relevantTypes)));
     }
 }
