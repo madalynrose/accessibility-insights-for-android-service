@@ -2,14 +2,22 @@ package com.microsoft.accessibilityinsightsforandroidservice;
 
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import androidx.annotation.Nullable;
+
+import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckResult;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheck;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheckResult;
+import com.google.android.apps.common.testing.accessibility.framework.Parameters;
 import com.google.android.apps.common.testing.accessibility.framework.ViewHierarchyElementUtils;
+import com.google.android.apps.common.testing.accessibility.framework.suggestions.FixSuggestion;
+import com.google.android.apps.common.testing.accessibility.framework.suggestions.FixSuggestionPreset;
+import com.google.android.apps.common.testing.accessibility.framework.uielement.AccessibilityHierarchy;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.AccessibilityHierarchyAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.DeviceStateAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.DisplayInfoAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.ViewHierarchyElementAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.WindowHierarchyElementAndroid;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -68,6 +76,7 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
         onRequestFulfilled.run();
     }
 
+
     @Override
     public boolean isBlockingRequest() {
         return true;
@@ -86,6 +95,15 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
         Gson gson = createAccessiblityTestAndroidGson();
         return gson.toJson(results);
     }
+
+    String getSuggestion(AccessibilityHierarchyCheckResult checkResult){
+            ImmutableList<FixSuggestion> suggestions =  FixSuggestionPreset.provideFixSuggestions(checkResult, checkResult.getElement().getWindow().getAccessibilityHierarchy(), null);
+            StringBuilder suggestionText = new StringBuilder();
+            for(FixSuggestion suggestion: suggestions)
+                suggestionText.append(suggestion.getDescription(Locale.getDefault()));
+            return suggestionText.toString();
+        }
+
 
     public Gson createAccessiblityTestAndroidGson() {
 
@@ -149,12 +167,16 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
                 @Override
                 public void write(JsonWriter out, AccessibilityHierarchyCheckResult value) throws IOException {
                     Gson gson = customGson.create();
+                    String suggestion = getSuggestion(value);
                     out.beginObject();
                     out.name("checkClass").value(String.valueOf(value.getSourceCheckClass()));
                     out.name("type").value(String.valueOf(value.getType()));
                     out.name("message").value(String.valueOf(value.getMessage(Locale.getDefault())));
                     out.name("resultId").value(value.getResultId());
                     out.name("element").value(gson.toJson(value.getElement()));
+                    if(!suggestion.isEmpty()){
+                        out.name("suggestion").value(suggestion);
+                    }
                     out.endObject();
                 }
 
