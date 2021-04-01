@@ -10,6 +10,9 @@ import com.google.android.apps.common.testing.accessibility.framework.Accessibil
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityEventCheck;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheck;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheckResult;
+import com.google.android.apps.common.testing.accessibility.framework.Parameters;
+import com.google.android.apps.common.testing.accessibility.framework.checks.TouchTargetSizeCheck;
+import com.google.android.apps.common.testing.accessibility.framework.suggestions.FixSuggestionPreset;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.AccessibilityHierarchyAndroid;
 import com.google.common.collect.ImmutableSet;
 
@@ -28,6 +31,9 @@ public class AccessibilityTestScanner {
     }
 
     public List<AccessibilityHierarchyCheckResult> scanWithAccessibilityTestFramework(AccessibilityNodeInfo rootNode) {
+        Parameters parameters = new Parameters();
+        parameters.setSaveViewImages(true);
+        parameters.putCustomTouchTargetSize(44);
         ImmutableSet<AccessibilityHierarchyCheck> checks =
                 AccessibilityCheckPreset.getAccessibilityHierarchyChecksForPreset(
                         AccessibilityCheckPreset.LATEST);
@@ -35,10 +41,11 @@ public class AccessibilityTestScanner {
         List<AccessibilityHierarchyCheckResult> results = new ArrayList<>();
 
         for (AccessibilityHierarchyCheck check : checks) {
-            results.addAll(check.runCheckOnHierarchy(hierarchy));
+            results.addAll(check.runCheckOnHierarchy(hierarchy, null, parameters));
         }
 
-        AccessibilityCheckResult.AccessibilityCheckResultType[] relevantTypes = {AccessibilityCheckResult.AccessibilityCheckResultType.ERROR,AccessibilityCheckResult.AccessibilityCheckResultType.INFO, AccessibilityCheckResult.AccessibilityCheckResultType.WARNING};
+        AccessibilityCheckResult.AccessibilityCheckResultType relevantTypes[] = {AccessibilityCheckResult.AccessibilityCheckResultType.ERROR,AccessibilityCheckResult.AccessibilityCheckResultType.INFO, AccessibilityCheckResult.AccessibilityCheckResultType.WARNING,AccessibilityCheckResult.AccessibilityCheckResultType.RESOLVED,
+                AccessibilityCheckResult.AccessibilityCheckResultType.NOT_RUN};
 
         return AccessibilityCheckResultUtils.getResultsForTypes(results, new HashSet<>(Arrays.asList(relevantTypes)));
     }

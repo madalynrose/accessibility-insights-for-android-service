@@ -2,27 +2,22 @@ package com.microsoft.accessibilityinsightsforandroidservice;
 
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.annotation.Nullable;
-
-import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckResult;
+import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckPreset;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheck;
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityHierarchyCheckResult;
-import com.google.android.apps.common.testing.accessibility.framework.Parameters;
 import com.google.android.apps.common.testing.accessibility.framework.ViewHierarchyElementUtils;
 import com.google.android.apps.common.testing.accessibility.framework.suggestions.FixSuggestion;
 import com.google.android.apps.common.testing.accessibility.framework.suggestions.FixSuggestionPreset;
-import com.google.android.apps.common.testing.accessibility.framework.uielement.AccessibilityHierarchy;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.AccessibilityHierarchyAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.DeviceStateAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.DisplayInfoAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.ViewHierarchyElementAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.WindowHierarchyElementAndroid;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
@@ -31,9 +26,12 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Locale;
+
+import static java.util.Objects.isNull;
 
 public class AccessibilityTestResultsFiller implements RequestFulfiller {
     private final RootNodeFinder rootNodeFinder;
@@ -93,21 +91,27 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
         }
 
         Gson gson = createAccessiblityTestAndroidGson();
-        return gson.toJson(results);
+        return getAllChecksString().concat(gson.toJson(results));
+    }
+
+    String getAllChecksString(){
+        ImmutableSet<AccessibilityHierarchyCheck> presetChecks = AccessibilityCheckPreset.getAccessibilityHierarchyChecksForPreset(AccessibilityCheckPreset.LATEST);
+        Gson gson = createAccessiblityTestAndroidGson();
+        return gson.toJson(presetChecks);
     }
 
     String getSuggestion(AccessibilityHierarchyCheckResult checkResult){
-            ImmutableList<FixSuggestion> suggestions =  FixSuggestionPreset.provideFixSuggestions(checkResult, checkResult.getElement().getWindow().getAccessibilityHierarchy(), null);
-            StringBuilder suggestionText = new StringBuilder();
-            for(FixSuggestion suggestion: suggestions)
-                suggestionText.append(suggestion.getDescription(Locale.getDefault()));
-            return suggestionText.toString();
-        }
-
+        ImmutableList<FixSuggestion> suggestions =  FixSuggestionPreset.provideFixSuggestions(checkResult, checkResult.getElement().getWindow().getAccessibilityHierarchy(), null);
+        StringBuilder suggestionText = new StringBuilder();
+        for(FixSuggestion suggestion: suggestions)
+            suggestionText.append(suggestion.getDescription(Locale.getDefault()));
+        return suggestionText.toString();
+    }
 
     public Gson createAccessiblityTestAndroidGson() {
 
         GsonBuilder customGson = new GsonBuilder();
+        customGson.disableHtmlEscaping().setPrettyPrinting();
         JsonSerializer<DisplayInfoAndroid> displayInfoAndroidJsonSerializer = (src, typeOfSrc, context) -> {
             JsonObject jsonResult = new JsonObject();
             Gson gson = customGson.create();
@@ -133,6 +137,7 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
         customGson.registerTypeAdapter(AccessibilityHierarchyAndroid.class, accessibilityHierarchyAndroidJsonSerializer);
         JsonSerializer<WindowHierarchyElementAndroid> windowHierarchyElementAndroidJsonSerializer = (src, typeOfSrc, context) -> {
             JsonObject jsonResult = new JsonObject();
+            customGson.disableHtmlEscaping().setPrettyPrinting();
             Gson gson = customGson.create();
             jsonResult.addProperty("accessibilityHierarchy", gson.toJson(src.getAccessibilityHierarchy()));
             return jsonResult;
@@ -140,9 +145,12 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
         customGson.registerTypeAdapter(WindowHierarchyElementAndroid.class, windowHierarchyElementAndroidJsonSerializer);
         JsonSerializer<ViewHierarchyElementAndroid> viewHierarchyElementAndroidJsonSerializer = (src, typeOfSrc, context) -> {
             JsonObject jsonResult = new JsonObject();
+            customGson.disableHtmlEscaping().setPrettyPrinting();
             Gson gson = customGson.create();
             jsonResult.addProperty("speakableText", ViewHierarchyElementUtils.getSpeakableTextForElement(src).toString());
             jsonResult.addProperty("shouldFocusView", ViewHierarchyElementUtils.shouldFocusView(src));
+            jsonResult.addProperty("isIntersectedByOverlayView", ViewHierarchyElementUtils.isIntersectedByOverlayView(src));
+            jsonResult.addProperty("isIntersectedByOverlayWindow", ViewHierarchyElementUtils.isIntersectedByOverlayWindow(src));
             jsonResult.addProperty("isPotentiallyObscured", ViewHierarchyElementUtils.isPotentiallyObscured(src));
             jsonResult.addProperty("windowElement", gson.toJson(src.getWindow()));
 
@@ -167,16 +175,22 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
                 @Override
                 public void write(JsonWriter out, AccessibilityHierarchyCheckResult value) throws IOException {
                     Gson gson = customGson.create();
-                    String suggestion = getSuggestion(value);
                     out.beginObject();
                     out.name("checkClass").value(String.valueOf(value.getSourceCheckClass()));
-                    out.name("type").value(String.valueOf(value.getType()));
                     out.name("message").value(String.valueOf(value.getMessage(Locale.getDefault())));
+
                     out.name("resultId").value(value.getResultId());
-                    out.name("element").value(gson.toJson(value.getElement()));
-                    if(!suggestion.isEmpty()){
-                        out.name("suggestion").value(suggestion);
+                    if(!isNull(value.getElement())) {
+                        String suggestion = getSuggestion(value);
+                        out.name("type").value(String.valueOf(value.getType()));
+                        if(!suggestion.isEmpty()){
+                            out.name("suggestion").value(suggestion);
+                        }
+                        out.name("element").value(gson.toJson(value.getElement()).trim());
+
                     }
+                    out.name("metadata").value(String.valueOf(value.getMetadata()));
+
                     out.endObject();
                 }
 
@@ -203,10 +217,25 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
         class AccessibilityHierarchyCheckAdapter extends TypeAdapter<AccessibilityHierarchyCheck> {
             @Override
             public void write(JsonWriter out, AccessibilityHierarchyCheck value) throws IOException {
+                Field[] fields = value.getClass().getDeclaredFields();
                 out.beginObject();
-                out.name("helpUrl").value(value.getHelpUrl());
-                out.name("category").value(String.valueOf(value.getCategory()));
+                out.name("class").value(value.getClass().getName());
                 out.name("titleMessage").value(value.getTitleMessage(Locale.getDefault()));
+                out.name("category").value(String.valueOf(value.getCategory()));
+                out.name("helpUrl").value(value.getHelpUrl());
+                for(Field field: fields) {
+                    Class<?> type = field.getType();
+                    try {
+                        Object val = field.get(value);
+                        if (String.class.isAssignableFrom(type)) {
+                            out.name(field.getName()).value(val.toString());
+                        } else if (int.class.isAssignableFrom(type)) {
+                            out.name(field.getName()).value(String.valueOf(val));
+                        }
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
                 out.endObject();
             }
 
@@ -216,6 +245,5 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
             }
         }
     }
-
 
 }
