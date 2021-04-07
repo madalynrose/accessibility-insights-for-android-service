@@ -1,5 +1,4 @@
 package com.microsoft.accessibilityinsightsforandroidservice;
-
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckPreset;
@@ -13,6 +12,7 @@ import com.google.android.apps.common.testing.accessibility.framework.uielement.
 import com.google.android.apps.common.testing.accessibility.framework.uielement.DisplayInfoAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.ViewHierarchyElementAndroid;
 import com.google.android.apps.common.testing.accessibility.framework.uielement.WindowHierarchyElementAndroid;
+import com.google.android.apps.common.testing.accessibility.framework.utils.contrast.BitmapImage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
@@ -38,6 +38,7 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
     private final EventHelper eventHelper;
     private final ResponseWriter responseWriter;
     private final AccessibilityTestScanner accessibilityTestScanner;
+    private final ScreenshotController screenshotController;
     private final AxeViewsFactory axeViewsFactory =
             new AxeViewsFactory(
                     new NodeViewBuilderFactory(),
@@ -47,19 +48,22 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
             ResponseWriter responseWriter,
             RootNodeFinder rootNodeFinder,
             EventHelper eventHelper,
-            AccessibilityTestScanner accessibilityTestScanner) {
+            AccessibilityTestScanner accessibilityTestScanner,
+            ScreenshotController screenshotController) {
         this.responseWriter = responseWriter;
         this.rootNodeFinder = rootNodeFinder;
         this.eventHelper = eventHelper;
         this.accessibilityTestScanner = accessibilityTestScanner;
+        this.screenshotController = screenshotController;
     }
 
     public void fulfillRequest(RunnableFunction onRequestFulfilled) {
+        screenshotController.getScreenshotWithMediaProjection(
+                screenshot -> {
         try {
             AccessibilityNodeInfo source = eventHelper.claimLastSource();
             AccessibilityNodeInfo rootNode = rootNodeFinder.getRootNodeFromSource(source);
-
-            String content = getScanContent(rootNode);
+            String content = getScanContent(rootNode, new BitmapImage(screenshot));
             responseWriter.writeSuccessfulResponse(content);
 
             if (rootNode != null && rootNode != source) {
@@ -72,7 +76,7 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
             responseWriter.writeErrorResponse(e);
         }
         onRequestFulfilled.run();
-    }
+    });}
 
 
     @Override
@@ -80,12 +84,12 @@ public class AccessibilityTestResultsFiller implements RequestFulfiller {
         return true;
     }
 
-    private String getScanContent(AccessibilityNodeInfo rootNode)
+    private String getScanContent(AccessibilityNodeInfo rootNode, BitmapImage screenshot)
             throws ScanException, ViewChangedException {
         if (rootNode == null) {
             throw new ScanException("Unable to locate root node to scan");
         }
-        List<AccessibilityHierarchyCheckResult> results = accessibilityTestScanner.scanWithAccessibilityTestFramework(rootNode);
+        List<AccessibilityHierarchyCheckResult> results = accessibilityTestScanner.scanWithAccessibilityTestFramework(rootNode, screenshot);
         if (results == null) {
             throw new ScanException("Scanner returned no data");
         }

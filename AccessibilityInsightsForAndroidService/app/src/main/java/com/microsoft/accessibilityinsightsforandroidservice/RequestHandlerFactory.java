@@ -52,7 +52,7 @@ public class RequestHandlerFactory {
       if (requestString.startsWith("GET /AccessibilityInsights/accessibilityTestFramework/result ")) {
         AccessibilityTestResultsFiller accessibilityTestResultsFiller =
                 new AccessibilityTestResultsFiller(
-                        responseWriter, rootNodeFinder, eventHelper, accessibilityTestScanner);
+                        responseWriter, rootNodeFinder, eventHelper, accessibilityTestScanner, screenshotController);
         return requestHandlerImplFactory.createRequestHandler(
                 socketHolder,
                 accessibilityTestResultsFiller,
